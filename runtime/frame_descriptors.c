@@ -211,6 +211,85 @@ void caml_register_frametables(void **table, int ntables) {
   add_frame_descriptors(&current_frame_descrs, new_frametables);
 }
 
+static void remove_entry(caml_frame_descrs * table, frame_descr * d) {
+  uintnat i;
+  uintnat r;
+  uintnat j;
+
+  i = Hash_retaddr(d->retaddr, table->mask);
+  while (table->descriptors[i] != d) {
+    i = (i+1) & table->mask;
+  }
+
+ r1:
+  j = i;
+  table->descriptors[i] = NULL;
+ r2:
+  i = (i+1) & table->mask;
+  // r3
+  if(table->descriptors[i] == NULL) return;
+  r = Hash_retaddr(table->descriptors[i]->retaddr, table->mask);
+  /* If r is between i and j (cyclically), i.e. if
+     table->descriptors[i]->retaddr don't need to be moved */
+  if(( ( j < r )  && ( r <= i ) ) ||
+     ( ( i < j )  && ( j < r )  ) ||      /* i cycled, r not */
+     ( ( r <= i ) && ( i < j ) )     ) {  /* i and r cycled */
+    goto r2;
+  }
+  // r4
+  table->descriptors[j] = table->descriptors[i];
+  goto r1;
+}
+
+static void remove_frame_descriptors
+  (caml_frame_descrs * table, void ** frametables, int ntables)
+{
+  intnat * frametable, len, decrease = 0;
+  frame_descr * descr;
+  caml_frametable_list ** previous;
+
+  caml_plat_wr_lock(&table->lock);
+
+  for (int i = 0; i < ntables; i++) {
+    frametable = frametables[i];
+    len = *frametable;
+    descr = (frame_descr *)(frametable + 1);
+    for (intnat j = 0; j < len; j++) {
+      remove_entry(table, descr);
+      descr = next_frame_descr(descr);
+    }
+    decrease += len;
+  }
+
+  table->num_descr -= decrease;
+
+  previous = &table->frametables;
+
+  iter_list(table->frametables, current) {
+  resume:
+    for (int i = 0; i < ntables; i++) {
+      if (current->frametable == frametables[i]) {
+        *previous = current->next;
+        caml_stat_free(current);
+        ntables--;
+        if (ntables == 0) goto release;
+        current = *previous;
+        frametables[i] = frametables[ntables];
+        goto resume;
+      }
+    }
+    previous = &current->next;
+  }
+
+ release:
+  caml_plat_rw_unlock(&table->lock);
+}
+
+void caml_unregister_frametables(void ** frametables, int ntables)
+{
+  remove_frame_descriptors(&current_frame_descrs, frametables, ntables);
+}
+
 caml_frame_descrs* caml_open_frame_descrs(void)
 {
   caml_plat_rd_lock(&current_frame_descrs.lock);
