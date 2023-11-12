@@ -31,6 +31,7 @@ extern "C++" {
 #define ATOMIC_UINTNAT_INIT(x) (x)
 typedef std::atomic<uintnat> atomic_uintnat;
 typedef std::atomic<intnat> atomic_intnat;
+#define ATOMIC_PTR_TYPEDEF(t, n) typedef std::atomic<t*> n;
 using std::memory_order_relaxed;
 using std::memory_order_acquire;
 using std::memory_order_release;
@@ -44,7 +45,7 @@ using std::memory_order_seq_cst;
 #define ATOMIC_UINTNAT_INIT(x) (x)
 typedef _Atomic uintnat atomic_uintnat;
 typedef _Atomic intnat atomic_intnat;
-
+#define ATOMIC_PTR_TYPEDEF(t, n) typedef t * _Atomic n;
 #elif defined(__GNUC__)
 
 /* Support for versions of gcc which have built-in atomics but do not
@@ -60,6 +61,7 @@ typedef enum memory_order {
 #define ATOMIC_UINTNAT_INIT(x) { (x) }
 typedef struct { uintnat repr; } atomic_uintnat;
 typedef struct { intnat repr; } atomic_intnat;
+#define ATOMIC_PTR_TYPEDEF(t, n) typedef struct { t *repr; } n;
 
 #define atomic_load_explicit(x, m) __atomic_load_n(&(x)->repr, (m))
 #define atomic_load(x) atomic_load_explicit((x), memory_order_seq_cst)
@@ -74,6 +76,8 @@ typedef struct { intnat repr; } atomic_intnat;
   __atomic_exchange_n(&(x)->repr, (newv), memory_order_seq_cst)
 #define atomic_fetch_add(x, n) \
   __atomic_fetch_add(&(x)->repr, (n), memory_order_seq_cst)
+#define atomic_fetch_sub(x, n) \
+  __atomic_fetch_sub(&(x)->repr, (n), memory_order_seq_cst)
 #define atomic_fetch_or(x, n) \
   __atomic_fetch_or(&(x)->repr, (n), memory_order_seq_cst)
 #define atomic_thread_fence __atomic_thread_fence
