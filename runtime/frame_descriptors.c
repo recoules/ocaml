@@ -211,6 +211,11 @@ void caml_register_frametables(void **table, int ntables) {
   add_frame_descriptors(&current_frame_descrs, new_frametables);
 }
 
+void caml_register_frametable(void * frametables)
+{
+  caml_register_frametables(&frametables, 1);
+}
+
 static void remove_entry(caml_frame_descrs * table, frame_descr * d) {
   uintnat i;
   uintnat r;
@@ -288,6 +293,11 @@ static void remove_frame_descriptors
 void caml_unregister_frametables(void ** frametables, int ntables)
 {
   remove_frame_descriptors(&current_frame_descrs, frametables, ntables);
+}
+
+void caml_unregister_frametable(void * frametables)
+{
+  caml_unregister_frametables(&frametables, 1);
 }
 
 caml_frame_descrs* caml_open_frame_descrs(void)
