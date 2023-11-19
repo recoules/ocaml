@@ -217,7 +217,7 @@ Caml_inline void caml_tsan_debug_log_pc(const char* msg, uintnat pc)
 void caml_tsan_exit_on_raise(uintnat pc, char* sp, char* trapsp)
 {
   caml_domain_state* domain_state = Caml_state;
-  caml_frame_descrs fds = caml_get_frame_descrs();
+  caml_frame_descrs * fds = caml_get_frame_descrs();
   uintnat next_pc = pc;
 
   /* iterate on each frame  */
@@ -301,7 +301,7 @@ void caml_tsan_exit_on_raise_c(char* limit)
 void caml_tsan_exit_on_perform(uintnat pc, char* sp)
 {
   struct stack_info* stack = Caml_state->current_stack;
-  caml_frame_descrs fds = caml_get_frame_descrs();
+  caml_frame_descrs * fds = caml_get_frame_descrs();
   uintnat next_pc = pc;
 
   /* iterate on each frame  */
@@ -332,7 +332,7 @@ void caml_tsan_exit_on_perform(uintnat pc, char* sp)
 CAMLreally_no_tsan void caml_tsan_entry_on_resume(uintnat pc, char* sp,
     struct stack_info const* stack)
 {
-  caml_frame_descrs fds = caml_get_frame_descrs();
+  caml_frame_descrs * fds = caml_get_frame_descrs();
   uintnat next_pc = pc;
 
   caml_next_frame_descriptor(fds, &next_pc, &sp, (struct stack_info*)stack);
