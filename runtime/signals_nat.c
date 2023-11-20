@@ -43,7 +43,7 @@ void caml_garbage_collection(void)
 {
   frame_descr* d;
   caml_domain_state * dom_st = Caml_state;
-  caml_frame_descrs * fds = caml_get_frame_descrs();
+  caml_frame_descrs * fds;
   struct stack_info* stack = dom_st->current_stack;
 
   char * sp = (char*)stack->sp;
@@ -55,7 +55,9 @@ void caml_garbage_collection(void)
   atomic_thread_fence(memory_order_acquire);
 
   { /* Find the frame descriptor for the current allocation */
+    fds = caml_open_frame_descrs();
     d = caml_find_frame_descr(fds, retaddr);
+    caml_close_frame_descrs(fds);
     /* Must be an allocation frame */
     CAMLassert(d && !frame_return_to_C(d) && frame_has_allocs(d));
   }

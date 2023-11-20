@@ -117,7 +117,10 @@ typedef struct caml_frametable_list {
 /* a hashtable of frame descriptors */
 typedef struct caml_frame_descrs caml_frame_descrs;
 
-caml_frame_descrs* caml_get_frame_descrs(void);
+/* Get the current frame descriptor table and acquire a read lock.
+   The returned table needs to be released with 'caml_close_frame_descrs'. */
+caml_frame_descrs* caml_open_frame_descrs(void);
+void caml_close_frame_descrs(caml_frame_descrs*);
 
 /* Find the current table of frame descriptors.
    The resulting structure is only valid until the next GC */

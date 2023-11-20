@@ -238,13 +238,13 @@ Caml_inline void scan_stack_frames(
   int n, ofs;
   unsigned short * p;
   value *root;
-  caml_frame_descrs * fds = caml_get_frame_descrs();
+  caml_frame_descrs * fds = caml_open_frame_descrs();
 
   sp = (char*)stack->sp;
   regs = gc_regs;
 
 next_chunk:
-  if (sp == (char*)Stack_high(stack)) return;
+  if (sp == (char*)Stack_high(stack)) goto release;
   sp = First_frame(sp);
   retaddr = Saved_return_address(sp);
 
@@ -274,6 +274,8 @@ next_chunk:
       goto next_chunk;
     }
   }
+ release:
+  caml_close_frame_descrs(fds);
 }
 
 void caml_scan_stack(

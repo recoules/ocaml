@@ -103,20 +103,21 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
       caml_alloc_backtrace_buffer() == -1)
     return;
 
-  fds = caml_get_frame_descrs();
+  fds = caml_open_frame_descrs();
   /* iterate on each frame  */
   while (1) {
     frame_descr * descr = caml_next_frame_descriptor
                                 (fds, &pc, &sp, domain_state->current_stack);
-    if (descr == NULL) return;
+    if (descr == NULL) break;
     /* store its descriptor in the backtrace buffer */
-    if (domain_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
+    if (domain_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
     domain_state->backtrace_buffer[domain_state->backtrace_pos++] =
       (backtrace_slot) descr;
 
     /* Stop when we reach the current exception handler */
-    if (sp > trapsp) return;
+    if (sp > trapsp) break;
   }
+  caml_close_frame_descrs(fds);
 }
 
 /* Stores upto [max_frames_value] frames of the current call stack to
@@ -134,7 +135,7 @@ static void get_callstack(struct stack_info* orig_stack, intnat max_frames,
   caml_frame_descrs * fds;
   CAMLnoalloc;
 
-  fds = caml_get_frame_descrs();
+  fds = caml_open_frame_descrs();
 
   /* first compute the size of the trace */
   {
@@ -177,6 +178,8 @@ static void get_callstack(struct stack_info* orig_stack, intnat max_frames,
       }
     }
   }
+
+  caml_close_frame_descrs(fds);
 }
 
 static value alloc_callstack(frame_descr** trace, intnat trace_len)

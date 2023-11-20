@@ -217,7 +217,8 @@ Caml_inline void caml_tsan_debug_log_pc(const char* msg, uintnat pc)
 void caml_tsan_exit_on_raise(uintnat pc, char* sp, char* trapsp)
 {
   caml_domain_state* domain_state = Caml_state;
-  caml_frame_descrs * fds = caml_get_frame_descrs();
+
+  caml_frame_descrs * fds = caml_open_frame_descrs();
   uintnat next_pc = pc;
 
   /* iterate on each frame  */
@@ -226,7 +227,7 @@ void caml_tsan_exit_on_raise(uintnat pc, char* sp, char* trapsp)
         domain_state->current_stack);
 
     if (descr == NULL) {
-      return;
+      break;
     }
 
     /* Stop when we reach the current exception handler */
@@ -238,6 +239,8 @@ void caml_tsan_exit_on_raise(uintnat pc, char* sp, char* trapsp)
     __tsan_func_exit(NULL);
     pc = next_pc;
   }
+
+  caml_close_frame_descrs(fds);
 }
 
 /* This function must be called before `caml_raise_exception` on a C stack.
@@ -301,7 +304,7 @@ void caml_tsan_exit_on_raise_c(char* limit)
 void caml_tsan_exit_on_perform(uintnat pc, char* sp)
 {
   struct stack_info* stack = Caml_state->current_stack;
-  caml_frame_descrs * fds = caml_get_frame_descrs();
+  caml_frame_descrs * fds = caml_open_frame_descrs();
   uintnat next_pc = pc;
 
   /* iterate on each frame  */
@@ -316,6 +319,8 @@ void caml_tsan_exit_on_perform(uintnat pc, char* sp)
 
     pc = next_pc;
   }
+
+  caml_close_frame_descrs(fds);
 }
 
 /* This function is executed after switching to the deeper fiber, but before
@@ -332,10 +337,11 @@ void caml_tsan_exit_on_perform(uintnat pc, char* sp)
 CAMLreally_no_tsan void caml_tsan_entry_on_resume(uintnat pc, char* sp,
     struct stack_info const* stack)
 {
-  caml_frame_descrs * fds = caml_get_frame_descrs();
+  caml_frame_descrs * fds = caml_open_frame_descrs();
   uintnat next_pc = pc;
 
   caml_next_frame_descriptor(fds, &next_pc, &sp, (struct stack_info*)stack);
+  caml_close_frame_descrs(fds);
   if (next_pc == 0) {
     stack = stack->handler->parent;
     if (!stack) {
