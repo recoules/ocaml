@@ -253,6 +253,7 @@ next_chunk:
     CAMLassert(d);
     if (!frame_return_to_C(d)) {
       /* Scan the roots in this frame */
+      caml_close_frame_descrs(fds);
       for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
         ofs = *p;
         if (ofs & 1) {
@@ -262,6 +263,7 @@ next_chunk:
         }
         f (fdata, *root, root);
       }
+      fds = caml_open_frame_descrs();
       /* Move to next frame */
       sp += frame_size(d);
       retaddr = Saved_return_address(sp);
