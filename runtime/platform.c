@@ -130,6 +130,17 @@ void caml_plat_cond_free(caml_plat_cond* cond)
   cond->mutex=0;
 }
 
+/* Readers-Writers lock */
+
+void caml_plat_rwlock_init(caml_plat_rwlock * m)
+{
+  check_err("rwlock_init", pthread_rwlock_init(m, NULL));
+}
+
+void caml_plat_rwlock_free(caml_plat_rwlock* m)
+{
+  check_err("rwlock_free", pthread_rwlock_destroy(m));
+}
 
 /* Memory management */
 

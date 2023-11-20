@@ -119,6 +119,15 @@ void caml_plat_wait(caml_plat_cond*);
 void caml_plat_broadcast(caml_plat_cond*);
 void caml_plat_signal(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);
+typedef pthread_rwlock_t caml_plat_rwlock;
+#define CAML_PLAT_RWLOCK_INITIALIZER PTHREAD_RWLOCK_INITIALIZER
+void caml_plat_rwlock_init(caml_plat_rwlock*);
+Caml_inline void caml_plat_rd_lock(caml_plat_rwlock*);
+Caml_inline int caml_plat_try_rd_lock(caml_plat_rwlock*);
+Caml_inline void caml_plat_wr_lock(caml_plat_rwlock*);
+Caml_inline int caml_plat_try_wr_lock(caml_plat_rwlock*);
+Caml_inline void caml_plat_rw_unlock(caml_plat_rwlock*);
+void caml_plat_rwlock_free(caml_plat_rwlock*);
 
 /* Memory management primitives (mmap) */
 
@@ -171,6 +180,48 @@ Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
 {
   DEBUG_UNLOCK(m);
   check_err("unlock", pthread_mutex_unlock(m));
+}
+
+Caml_inline void caml_plat_rd_lock(caml_plat_rwlock* m)
+{
+  check_err("rd_lock", pthread_rwlock_rdlock(m));
+  DEBUG_LOCK(m);
+}
+
+Caml_inline int caml_plat_try_rd_lock(caml_plat_rwlock* m)
+{
+  int r = pthread_rwlock_tryrdlock(m);
+  if (r == EBUSY) {
+    return 0;
+  } else {
+    check_err("try_rd_lock", r);
+    DEBUG_LOCK(m);
+    return 1;
+  }
+}
+
+Caml_inline void caml_plat_wr_lock(caml_plat_rwlock* m)
+{
+  check_err("wr_lock", pthread_rwlock_wrlock(m));
+  DEBUG_LOCK(m);
+}
+
+Caml_inline int caml_plat_try_wr_lock(caml_plat_rwlock* m)
+{
+  int r = pthread_rwlock_trywrlock(m);
+  if (r == EBUSY) {
+    return 0;
+  } else {
+    check_err("try_wr_lock", r);
+    DEBUG_LOCK(m);
+    return 1;
+  }
+}
+
+Caml_inline void caml_plat_rw_unlock(caml_plat_rwlock* m)
+{
+  DEBUG_UNLOCK(m);
+  check_err("rw_unlock", pthread_rwlock_unlock(m));
 }
 
 extern intnat caml_plat_pagesize;
